@@ -102,6 +102,12 @@ https://github.com/user-attachments/assets/01fd0e94-3eaa-4830-a340-8e6ed3ee3273
 * **Resolution**:
     * **Swap Memory**: **fallocate**를 사용하여 4GB Swap 파일 생성 및 마운트하여 부족한 메모리 확보.
     * **Heap Size**: Elasticsearch JVM Heap 사이즈를 환경에 맞게 제한 설정.
+#### 🛠️ 적용 결과 모니터링
+
+| 프로세스 구동 확인 (Top) | 메모리 및 Swap 사용량 (Free) |
+| :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/514eb517-6602-4102-92da-62b45b0b3791" width="400"> | <img src="https://github.com/user-attachments/assets/ba4a55cc-50c8-4466-8cb7-e9f9aa71822d" width="400"> |
+| **결과:** 메모리 점유율이 높은 Java(ELK), Node(n8n), DB 프로세스들이 종료되지 않고 **동시 실행 상태 유지**됨을 확인. | **결과:** 물리 메모리 부족분을 **Swap 영역(1.3Gi 사용 중)**이 효과적으로 커버하여 OOM 방지 및 안정성 확보. |
 
 ### 3. Boolean 처리 오류 (true / false → 0 저장)
 * **Issue**: CSV의 **true / false** 값이 MySQL **TINYINT(1)**에 저장 시 모두 **1**로 변환
