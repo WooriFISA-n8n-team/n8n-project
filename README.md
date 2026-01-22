@@ -80,6 +80,14 @@
 ## 🎁 Result
 
 
+https://github.com/user-attachments/assets/4a7676db-6bf4-4efb-96f1-a2c09f45fef4
+
+
+https://github.com/user-attachments/assets/01fd0e94-3eaa-4830-a340-8e6ed3ee3273
+
+
+
+
 ## 🔧 Trouble Shooting
 
 ### 1. Elasticsearch 7.x 보안 모듈 수동 활성화
