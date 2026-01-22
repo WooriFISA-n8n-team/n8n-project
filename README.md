@@ -37,21 +37,39 @@
 * “**적재 과정을 자동화**하면 생산성이 확 올라가겠다”는 문제의식이 생겼고, 단순 자동화가 아니라 **실무에서 실제로 쓰는 형태**와 비슷하게 만들어 보고 싶었다.
 * 그래서 **ETL(Extract → Transform → Load)** 흐름을 갖춘 파이프라인을 직접 설계·구현하는 것을 목표로 잡았다.
 ### 확장
-* 실무 연관성을 찾다 보니, 금융/카드 도메인에서는 카드 결제/정산 데이터가 실시간 API만으로 끝나지 않고, **배치형(CSV/파일)**으로 “모아서** 처리**”되는 경우가 많다는 점이 눈에 들어왔다.
+* 실무 연관성을 찾다 보니, 금융/카드 도메인에서는 카드 결제/정산 데이터가 실시간 API만으로 끝나지 않고, **배치형(CSV/파일)**으로 “모아서** 처리**”되는 경우가 많다는 점을 확인할 수 있었다.
 * 실제 결제 흐름을 배치 관점으로 단순화한 예시
- <img src="images\visualselection.png">
+ <img src="images\visualselection.png" alt="실제 결제 흐름도">
+
+
+#### 참고자료
+ - 페이게이트, "Seyfert API 연동 매뉴얼," pp. 101-102.
+  https://www.paygate.net/resources/front/file/api_kr.pdf
+
+- 토스페이먼츠, "카드사 매입과 정산, 뭐가 다를까?," 토스페이먼츠 블로그.
+  https://www.tosspayments.com/blog/articles/33907
+
+- 금융결제원(KFTC), "PG 서비스 소개: 정산/입금," 금융결제원 VAN 서비스.
+  https://pg.kftcvan.or.kr/introduction/settlement
+
+- OpenAI, ChatGPT (Generative AI).
+
+ 
 ### 결론
 * 단순히 “CSV를 DB에 넣기”가 아니라, 실무에서 흔한 배치 데이터 흐름을 모델로 삼아 적재(run) 단위 추적 → 원본 스테이징 적재 → 1·2차 정제/대사 → 정본 적재 → 시각화/알림까지 이어지는 파이프라인을 자동화해보기로 했다.
 
 ## 📂 Workflow Logic Details
-<img src="images\n8nflow1.png">
+<img src="images\flow1.png">
+
 * 배치 파일(csv 데이터셋)을 읽어온 다음, 각 거래 건마다 고유키 생성 및 개인정보 해시
 * 배치 파일 원본 적재
 * 배치 파일 원본 적재 후 중복값 등 데이터 1차 정제
-<img src="images\n8nflow2.png">
+<img src="images\flow2.png">
+
 * 1차 정제한 배치파일 원본과 현장 결제 승인/거절 데이터와 비교하여 2차 검증
 * 2차 검증 후 데이터 정본을 DB에 적재
-<img src="images\n8nflow3.png">
+<img src="images\flow3.png">
+
 * 정본 적재와 동시에 성공/실패 여부를 푸시
 * 정본 적재 후 데이터 및 ES와 kibana를 이용하여 사용자 통계 분석
 
@@ -72,4 +90,21 @@
 * **Resolution**:
     * **Swap Memory**: `fallocate`를 사용하여 4GB Swap 파일 생성 및 마운트하여 부족한 메모리 확보.
     * **Heap Size**: Elasticsearch JVM Heap 사이즈를 환경에 맞게 제한 설정.
-      
+
+### 3. Boolean 처리 오류 (`true / false → 0 저장`)
+* **Issue**: CSV의 `true / false` 값이 MySQL `TINYINT(1)`에 저장 시 모두 `0`으로 변환
+* **Cause**:
+    * CSV 값이 문자열로 인식됨
+    * 예를 들어 true가 boolean이 아니라 String으로 인식되어 조건문을 통해 boolean 변환을 해줬어야 함!   
+* **Resolution**:
+    * **n8n Code 노드에서 명시적 변환:**: {{String($json.is_cancel)==='true' ? 1:0}}
+ 
+
+### 4. n8n 파일 접근 오류 (`Access denied` / `No such file or directory`)
+* **Issue**: VM 내부 디렉터리에 저장한 데이터셋 파일을 n8n이 찾지 못하는 상황 발생
+* **Cause**:
+    * n8n은 보안상 디스크 접근 경로를 제한
+    * 기본 허용 경로: `/home/node/.n8n-files`
+    * Docker 컨테이너의 `/files` 경로로 요청하고 있었음!
+* **Resolution**:
+    * **n8n 허용 경로에 `/files` 추가:**: N8N_FILE_STORAGE_PATHS="/home/node/.n8n-files,/files"
