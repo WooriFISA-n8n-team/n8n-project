@@ -53,8 +53,6 @@
 - 금융결제원(KFTC), "PG 서비스 소개: 정산/입금," 금융결제원 VAN 서비스.
   https://pg.kftcvan.or.kr/introduction/settlement
 
-- OpenAI, ChatGPT (Generative AI).
-
  
 ### 결론
 * 단순히 “**CSV를 DB에 넣는 것**”이 아니라, 실무에서 흔한 배치 데이터 흐름을 모델로 삼아 **적재(run) 단위 추적 → 원본 스테이징 적재 → 1·2차 정제/대사 → 정본 적재 → 시각화/알림**까지 이어지는 파이프라인을 자동화해보기로 했다.
