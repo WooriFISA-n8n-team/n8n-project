@@ -123,7 +123,7 @@ https://github.com/user-attachments/assets/01fd0e94-3eaa-4830-a340-8e6ed3ee3273
 | **결과:** 메모리 점유율이 높은 Java(ELK), Node(n8n), DB 프로세스들이 종료되지 않고 **동시 실행 상태 유지**됨을 확인. | **결과:** 물리 메모리 부족분을 **Swap 영역**(1.3Gi 사용 중)이 효과적으로 커버하여 OOM 방지 및 안정성 확보. |
 
 ### 3. Boolean 처리 오류 (true / false → 0 저장)
-* **Issue**: CSV의 **true / false** 값이 MySQL **TINYINT(1)**에 저장 시 모두 **1**로 변환
+* **Issue**: CSV의 **true / false** 값이 MySQL **TINYINT(1)**에 저장 시 모두 **0**으로 변환
 * **Cause**:
     * CSV 값이 **문자열**로 인식됨
     * 예를 들어 true가 boolean이 아니라 String으로 인식되어 조건문을 통해 boolean 변환을 해줬어야 함!   
