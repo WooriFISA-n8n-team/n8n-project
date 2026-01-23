@@ -1,0 +1,1028 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "89b9d36e-7164-4e2a-895c-9154b7c1345d",
+              "name": "type",
+              "value": "국내",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -528,
+        1872
+      ],
+      "id": "0672a55c-690e-495b-90b4-6d3b91337c66",
+      "name": "국내 라벨링"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a9b9d36e-7164-4e2a-895c-9154b7c1345d",
+              "name": "type",
+              "value": "해외",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -528,
+        2048
+      ],
+      "id": "d2d3b000-bd97-43a4-8010-776326314481",
+      "name": "해외 라벨링"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/files/incoming/n8ndata.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1280,
+        1056
+      ],
+      "id": "0de80d5b-4bea-4e31-bff8-a176241c1424",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1088,
+        1056
+      ],
+      "id": "47a3793f-53ff-43c7-b9e6-ecb4f4507eb6",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "value": "ingest_runs",
+          "mode": "list",
+          "cachedResultName": "ingest_runs"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -1280,
+        1248
+      ],
+      "id": "1d0dea38-9636-4da3-b017-f903bffc9205",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "mySql": {
+          "id": "y3ZoJLRXD1J2K46g",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": {
+          "__rl": true,
+          "value": "transactions_stage",
+          "mode": "list",
+          "cachedResultName": "transactions_stage"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -304,
+        1056
+      ],
+      "id": "c0e5b7a5-ad39-40ef-a227-8e379641e5ad",
+      "name": "Select rows from a table",
+      "credentials": {
+        "mySql": {
+          "id": "y3ZoJLRXD1J2K46g",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const j = item.json;\n\n  // 키 재료(문자열) - 구분자 포함해서 합치기\n  // 취소까지 포함하려면 orig_* 같은 참조키가 있으면 같이 넣어도 됨\n  const material = [\n    j.source_system,\n    j.batch_file_id,\n    j.merchant_id,\n    j.approval_no,\n    j.txn_datetime,\n    j.amount,\n    j.card_token,          // 있다면(토큰/마스킹)\n    j.channel,\n    j.is_cancel\n  ].map(v => v ?? '').join('|');\n\n  j.txn_key_material = material;\n\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        1056
+      ],
+      "id": "41542ede-ffac-4819-81df-4cb715bf7931",
+      "name": "해시를위한 작업"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "table": {
+          "__rl": true,
+          "value": "transactions",
+          "mode": "list",
+          "cachedResultName": "transactions"
+        },
+        "dataMode": "defineBelow",
+        "columnToMatchOn": "txn_key",
+        "valueToMatchOn": "={{$json.txn_key}}",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "customer_key",
+              "value": "={{$json.customer_key}}"
+            },
+            {
+              "column": "txn_datetime",
+              "value": "={{$json.txn_datetime}}"
+            },
+            {
+              "column": "approval_no",
+              "value": "={{$json.approval_no}}"
+            },
+            {
+              "column": "merchant_name",
+              "value": "={{$json.merchant_name}}"
+            },
+            {
+              "column": "amount",
+              "value": "={{$json.amount}}"
+            },
+            {
+              "column": "currency",
+              "value": "={{$json.currency}}"
+            },
+            {
+              "column": "is_cancel",
+              "value": "={{String($json.is_cancel)==='true' ? 1:0}}"
+            },
+            {
+              "column": "original_approval_no",
+              "value": "={{$json.original_approval_no}}"
+            },
+            {
+              "column": "channel",
+              "value": "={{$json.channel}}"
+            },
+            {
+              "column": "city",
+              "value": "={{$json.city}}"
+            },
+            {
+              "column": "mcc",
+              "value": "={{$json.mcc}}"
+            },
+            {
+              "column": "merchant_id",
+              "value": "={{$json.merchant_id}}"
+            },
+            {
+              "column": "category",
+              "value": "={{$json.category}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        128,
+        1264
+      ],
+      "id": "c9555045-760d-4123-ba86-1cb9d36db20b",
+      "name": "1차 검증본",
+      "credentials": {
+        "mySql": {
+          "id": "y3ZoJLRXD1J2K46g",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function s(v) { return (v === null || v === undefined) ? '' : String(v).trim(); }\nfunction toInt(v, def=null) {\n  const t = s(v).replace(/,/g,''); if (!t) return def;\n  const n = Number(t); return Number.isFinite(n) ? Math.trunc(n) : def;\n}\nfunction toBool(v) {\n  const t = s(v).toLowerCase();\n  if (['true','1','y','yes'].includes(t)) return true;\n  if (['false','0','n','no'].includes(t)) return false;\n  return null;\n}\n\nreturn items\n  .map(item => {\n    const row = item.json;\n\n    // 공백 줄 제거\n    const keys = Object.keys(row || {});\n    if (keys.length === 0 || keys.every(k => s(row[k]) === '')) return null;\n\n    const cleaned = {\n      batch_file_id: s(row.batch_file_id),\n      batch_date: s(row.batch_date),\n      source_system: s(row.source_system),\n      customer_key: s(row.customer_key),\n      card_token: s(row.card_token) || null,\n      txn_datetime: s(row.txn_datetime),\n      approval_no: s(row.approval_no),\n      merchant_name: s(row.merchant_name),\n      merchant_id: s(row.merchant_id),\n      mcc: s(row.mcc) || null,\n      category: s(row.category) || null,\n      amount: toInt(row.amount, null),\n      currency: s(row.currency) || 'KRW',\n      is_cancel: toBool(row.is_cancel),\n      original_approval_no: s(row.original_approval_no) || null,\n      installment_months: toInt(row.installment_months, null),\n      channel: s(row.channel),\n      city: s(row.city) || null,\n      txn_key: row.txn_key || null,\n    };\n\n    cleaned.txn_key_material = [\n      cleaned.customer_key,\n      cleaned.approval_no,\n      cleaned.txn_datetime,\n      String(cleaned.amount ?? ''),\n      String(cleaned.is_cancel),\n    ].join('|');\n\n    return { json: cleaned };\n  })\n  .filter(Boolean);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        1056
+      ],
+      "id": "dbe51408-bd8e-4cc8-ac85-fa2e12dadfe0",
+      "name": "정제화"
+    },
+    {
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "value": "transactions_stage",
+          "mode": "list",
+          "cachedResultName": "transactions_stage"
+        },
+        "dataMode": "defineBelow",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "run_id",
+              "value": "={{$items(\"Code in JavaScript1\")[0].json[\"run_id\"]}}"
+            },
+            {
+              "column": "txn_key",
+              "value": "={{$json.txn_key}}"
+            },
+            {
+              "column": "batch_file_id",
+              "value": "={{$json.batch_file_id}}"
+            },
+            {
+              "column": "batch_date",
+              "value": "={{$json.batch_date}}"
+            },
+            {
+              "column": "source_system",
+              "value": "={{$json.source_system}}"
+            },
+            {
+              "column": "customer_key",
+              "value": "={{$json.customer_key}}"
+            },
+            {
+              "column": "txn_datetime",
+              "value": "={{$json.txn_datetime}}"
+            },
+            {
+              "column": "approval_no",
+              "value": "={{$json.approval_no}}"
+            },
+            {
+              "column": "merchant_name",
+              "value": "={{$json.merchant_name}}"
+            },
+            {
+              "column": "merchant_id",
+              "value": "={{$json.merchant_id}}"
+            },
+            {
+              "column": "amount",
+              "value": "={{$json.amount}}"
+            },
+            {
+              "column": "currency",
+              "value": "={{$json.currency}}"
+            },
+            {
+              "column": "is_cancel",
+              "value": "={{String($json.is_cancel)==='true' ? 1:0}}"
+            },
+            {
+              "column": "installment_months",
+              "value": "={{$json.installment_months}}"
+            },
+            {
+              "column": "channel",
+              "value": "={{$json.channel}}"
+            },
+            {
+              "column": "city",
+              "value": "={{$json.city}}"
+            },
+            {
+              "column": "mcc",
+              "value": "={{$json.mcc}}"
+            },
+            {
+              "column": "category",
+              "value": "={{$json.category}}"
+            },
+            {
+              "column": "original_approval_no",
+              "value": "={{$json.original_approval_no}}"
+            },
+            {
+              "column": "card_token",
+              "value": "={{$json.card_token}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -512,
+        1056
+      ],
+      "id": "3d216c0a-0803-4b54-992d-b718ea31c3bb",
+      "name": "원본 적재",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "credentials": {
+        "mySql": {
+          "id": "y3ZoJLRXD1J2K46g",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    recon_id, \n    auth_amount, \n    currency, \n    customer_key, \n    channel, \n    category,\n    city,\n    created_at \nFROM settlement_transactions\nWHERE recon_run_id = '{{$node[\"Code (Recon Meta)\"].json.recon_run_id}}'\n  AND recon_date   = '{{$node[\"Code (Recon Meta)\"].json.recon_date}}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -992,
+        1904
+      ],
+      "id": "520c7616-d884-4f3c-bc96-0e39fb159e60",
+      "name": "select_settlement_transactions",
+      "credentials": {
+        "mySql": {
+          "id": "y3ZoJLRXD1J2K46g",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "52dd7483-6703-446e-82b4-fee91ae66dec",
+              "leftValue": "={{ $json.currency }}",
+              "rightValue": "KRW",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -752,
+        1904
+      ],
+      "id": "5aee99ac-73e4-40d8-82a2-9ddc864d40fc",
+      "name": "국내결제/해외결제 분기"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://elasticsearch:9200/settlement-korea/_doc/{{ $('국내결제/해외결제 분기').item.json.recon_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "elasticsearchApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"recon_id\": {{ $json.recon_id }},\n  \"type\": \"{{ $json.type }}\",\n  \"@timestamp\": \"{{ $json.created_at }}\", \n  \n  \"payment\": {\n    \"currency\": \"{{ $json.currency }}\",\n    \"amount\": {{ $json.auth_amount }},\n    \"merchant\": \"{{ $json.merchant_id }}\",\n    \"channel\": \"{{ $json.channel }}\"\n  },\n\n  \"customer\": {\n    \"id\": \"{{ $json.customer_key }}\"\n  },\n\n  \"analysis\": {\n  \"category\": \"{{ $json.category }}\",\n  \"city\": \"{{ $json.city }}\"\n}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -336,
+        1872
+      ],
+      "id": "8a7c641a-b344-4962-9c44-7256fd9a9631",
+      "name": "엘라스틱서치 적재(국내)",
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "ZqtirwX5Peetu8lS",
+          "name": "Elasticsearch account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://elasticsearch:9200/settlement-overseas/_doc/{{ $('국내결제/해외결제 분기').item.json.recon_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "elasticsearchApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"recon_id\": {{ $json.recon_id }},\n  \"type\": \"{{ $json.type }}\",\n  \"@timestamp\": \"{{ $json.created_at }}\", \n  \n  \"payment\": {\n    \"currency\": \"{{ $json.currency }}\",\n    \"amount\": {{ $json.auth_amount }},\n    \"merchant\": \"{{ $json.merchant_id }}\",\n    \"channel\": \"{{ $json.channel }}\"\n  },\n\n  \"customer\": {\n    \"id\": \"{{ $json.customer_key }}\"\n  },\n\n  \"analysis\": {\n    \"category\": \"{{ $json.category }}\", \n    \"city\": \"{{ $json.city }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -336,
+        2048
+      ],
+      "id": "c667a7f3-1376-4c3f-ad17-7a097f8658eb",
+      "name": "엘라스틱서치 적재(해외)",
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "ZqtirwX5Peetu8lS",
+          "name": "Elasticsearch account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "409e5e33-56a8-4ccb-9d22-7bb04ade0224",
+              "name": "recon_id",
+              "value": "{{ $('국내 라벨링').item.json.recon_id }",
+              "type": "string"
+            },
+            {
+              "id": "373d72cf-a2a4-427d-80ad-f09b6a3fc01b",
+              "name": "auth_amount",
+              "value": "={{ $('국내 라벨링').item.json.auth_amount }}",
+              "type": "number"
+            },
+            {
+              "id": "1243d372-4ca3-4141-ba81-e54aae70ba5a",
+              "name": "type",
+              "value": "국내",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        1872
+      ],
+      "id": "36facae0-aa47-434e-a07c-2f454b6a5f0a",
+      "name": "데이터 복원 (국내)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7189eef1-500e-4611-b00c-f5cf71a6f09f",
+              "name": "recon_id",
+              "value": "{{ $('해외 라벨링').item.json.recon_id }",
+              "type": "string"
+            },
+            {
+              "id": "6359971c-7c5f-49d5-a262-b9afa1ffa9cc",
+              "name": "auth_amount",
+              "value": "={{ $('해외 라벨링').item.json.auth_amount }}",
+              "type": "number"
+            },
+            {
+              "id": "fd874cf3-6e68-49d2-b2d2-f2f75dd34e50",
+              "name": "type",
+              "value": "해외",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        2048
+      ],
+      "id": "511d180d-9fec-4bc7-89df-d394127bb05b",
+      "name": "데이터 복원 (해외)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        80,
+        1968
+      ],
+      "id": "982a956a-a335-4eeb-b370-a653f6d46afd",
+      "name": "데이터 병합"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "field": "recon_id"
+            },
+            {
+              "aggregation": "sum",
+              "field": "auth_amount"
+            }
+          ]
+        },
+        "fieldsToSplitBy": "type",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1,
+      "position": [
+        256,
+        1968
+      ],
+      "id": "2810babe-49aa-4216-bc19-5192fa8fe0a9",
+      "name": "유형별 합계 산출"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Summarize1 노드의 결과를 가져옵니다.\nconst items = $input.all();\n\n// 안전하게 데이터를 가져오는 함수\nconst getData = (targetType) => {\n  const item = items.find(i => i.json.type === targetType);\n  if (!item) return { count: 0, amount: 0 };\n  \n  const json = item.json;\n  \n  // 1. 건수 찾기\n  const count = json.count || json.count_recon_id || 0;\n  \n  // 2. 금액 찾기 (문자를 숫자로 변환)\n  const rawAmount = json.total_amount || json.sum_auth_amount || 0;\n  const amount = Number(rawAmount); \n  \n  return { count, amount };\n};\n\n// 국내, 해외 데이터 추출\nconst kr = getData(\"국내\");\nconst os = getData(\"해외\");\n\n// 2. 총합계 계산\nconst grandTotalCount = kr.count + os.count;\n\n// ⚠️ 주의: 원화(KRW)와 달러(USD)는 환율 없이 단순히 더하면 안 됩니다.\n// 따라서 총액은 합산하지 않고 \"10,000 KRW / $100\" 형태로 나란히 보여줍니다.\nconst totalAmountString = `${kr.amount.toLocaleString()} KRW  /  $${os.amount.toLocaleString()}`;\n\n\n// 3. 결과 출력 (Discord 노드에서 쓸 변수명)\nreturn {\n  // 국내\n  kr_count: kr.count,\n  kr_sum: kr.amount.toLocaleString(),\n  \n  // 해외 (달러 표시 추가)\n  os_count: os.count,\n  os_sum: '$' + os.amount.toLocaleString(), \n  \n  // 전체 총합 (문자열로 반환)\n  total_count: grandTotalCount,\n  total_amount: totalAmountString\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        1968
+      ],
+      "id": "b33c7157-0da5-4905-953d-bbf39e93cef4",
+      "name": "리포트 양식 생성"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1462809324094230590",
+          "mode": "id"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1462809324819714151",
+          "mode": "id"
+        },
+        "content": "=🚀 **결제 데이터 적재 리포트**\n\n🇰🇷 **국내 결제**\n- 건수: {{ $json.kr_count }}건\n- 금액: {{ $json.kr_sum }} KRW\n\n🌍 **해외 결제**\n- 건수: {{ $json.os_count }}건\n- 금액: {{ $json.os_sum }} \n\n━━━━━━━━━━━━━━━━━━\n✅ **전체 총합계**\n- 총 건수: {{ $json.total_count }}건\n- 총 금액: {{ $json.total_amount }}\n━━━━━━━━━━━━━━━━━━",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        608,
+        1968
+      ],
+      "id": "c0184704-3642-4026-860a-872577dd71f0",
+      "name": "디스코드 알림 발송",
+      "webhookId": "ad491874-b9dd-484d-8260-e6b2beb39a92",
+      "credentials": {
+        "discordBotApi": {
+          "id": "SUi5JKsQ4119EUBQ",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE ingest_runs\nSET status = 'DONE',\n    ended_at = NOW(),\n    row_total = {{ $items(\"Crypto\").length }},\n    row_ok = {{ $items(\"Crypto\").length }},\n    row_fail = 0\nWHERE run_id = {{ $node[\"Code in JavaScript1\"].json[\"run_id\"] }};",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -992,
+        1680
+      ],
+      "id": "2509c7d8-8c99-44c0-a2b6-58ef29a0b915",
+      "name": "DB에 로그기록 적재",
+      "credentials": {
+        "mySql": {
+          "id": "y3ZoJLRXD1J2K46g",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const recon_run_id = String($execution.id);\nconst recon_date = new Date(Date.now() - 24*60*60*1000).toISOString().slice(0,10); // 어제 YYYY-MM-DD\nconst tolerance_min = 5;\n\nreturn [{ json: { recon_run_id, recon_date, tolerance_min } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1712,
+        1904
+      ],
+      "id": "930f7bb0-dd1b-4e2b-836b-79ea74718b05",
+      "name": "Code (Recon Meta)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1712,
+        1184
+      ],
+      "id": "ce9d8f4e-a76f-4586-b94c-758ed2a6f2e1",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 한 번 실행(run)마다 고유값 생성\nconst run_id = Date.now();   // 밀리초 타임스탬프(충분히 유니크)\nconst file_name = 'n8ndata.csv'; // 지금은 1개 파일 기준으로 하드코딩(나중에 자동화 가능)\n\nreturn [{\n  json: {\n    run_id,\n    file_name,\n    status: 'STARTED'\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1520,
+        1184
+      ],
+      "id": "aeb09ce1-a344-410a-8c68-f6f3e9fbde8d",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "type": "SHA256",
+        "value": "={{$json.txn_key_material}}",
+        "dataPropertyName": "txn_key"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        -704,
+        1056
+      ],
+      "id": "41444b63-a2a7-4461-a2d7-3361afe556eb",
+      "name": "Crypto"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO recon_results (\n  recon_run_id, recon_date,\n  txn_key, match_status,\n  auth_id, clearing_id,\n  auth_amount, clearing_amount,\n  merchant_id, currency,\n  channel, city,\n  auth_is_cancel, clearing_is_cancel,\n  mcc, category,\n  customer_key\n)\n\nSELECT\n  '{{$node[\"Code (Recon Meta)\"].json.recon_run_id}}' AS recon_run_id,\n  '{{$node[\"Code (Recon Meta)\"].json.recon_date}}'   AS recon_date,\n\n  c.txn_key AS txn_key,\n\n  CASE\n    WHEN IFNULL(c.is_cancel,0) = 1 THEN 'CANCEL'\n    WHEN a.approval_no IS NULL THEN 'MISSING'\n    WHEN a.merchant_id <> c.merchant_id THEN 'MERCHANT_MISMATCH'\n    WHEN a.amount <> c.amount OR a.currency <> c.currency THEN 'AMOUNT_MISMATCH'\n    WHEN ABS(TIMESTAMPDIFF(MINUTE, a.auth_datetime, c.txn_datetime))\n         > {{$node[\"Code (Recon Meta)\"].json.tolerance_min}}\n      THEN 'DATETIME_SHIFT'\n    ELSE 'MATCH'\n  END AS match_status,\n\n  a.approval_no AS auth_id,\n  c.approval_no AS clearing_id,\n\n  a.amount AS auth_amount,\n  c.amount AS clearing_amount,\n\n  c.merchant_id,\n  c.currency,\n\n  c.channel,\n  c.city,\n\n  IFNULL(a.is_cancel,0) AS auth_is_cancel,\n  IFNULL(c.is_cancel,0) AS clearing_is_cancel,\n\n  c.mcc,\n  c.category,\n\n  c.customer_key AS customer_key\n\nFROM\n(\n  SELECT\n    t.*,\n    CASE\n      WHEN IFNULL(t.is_cancel,0) = 1 THEN t.original_approval_no\n      ELSE t.approval_no\n    END AS match_approval_no\n  FROM transactions t\n  LEFT JOIN (\n    SELECT original_approval_no AS orig_approval_no\n    FROM transactions\n    WHERE IFNULL(is_cancel,0) = 1\n      AND original_approval_no IS NOT NULL\n    GROUP BY original_approval_no\n  ) cm\n    ON cm.orig_approval_no = t.approval_no\n  WHERE NOT (IFNULL(t.is_cancel,0) = 0 AND cm.orig_approval_no IS NOT NULL)\n) c\nLEFT JOIN auth_transactions a\n  ON a.approval_no = c.match_approval_no\n\nUNION ALL\n\nSELECT\n  '{{$node[\"Code (Recon Meta)\"].json.recon_run_id}}' AS recon_run_id,\n  '{{$node[\"Code (Recon Meta)\"].json.recon_date}}'   AS recon_date,\n\n  a.txn_key AS txn_key,\n  'MISSING' AS match_status,\n\n  a.approval_no AS auth_id,\n  NULL AS clearing_id,\n\n  a.amount AS auth_amount,\n  NULL AS clearing_amount,\n\n  a.merchant_id,\n  a.currency,\n\n  a.channel,\n  a.city,\n\n  IFNULL(a.is_cancel,0) AS auth_is_cancel,\n  NULL AS clearing_is_cancel,\n\n  a.mcc,\n  a.category,\n\n  a.customer_key AS customer_key\n\nFROM auth_transactions a\nLEFT JOIN\n(\n  SELECT\n    t.*,\n    CASE\n      WHEN IFNULL(t.is_cancel,0) = 1 THEN t.original_approval_no\n      ELSE t.approval_no\n    END AS match_approval_no\n  FROM transactions t\n  LEFT JOIN (\n    SELECT original_approval_no AS orig_approval_no\n    FROM transactions\n    WHERE IFNULL(is_cancel,0) = 1\n      AND original_approval_no IS NOT NULL\n    GROUP BY original_approval_no\n  ) cm\n    ON cm.orig_approval_no = t.approval_no\n  WHERE NOT (IFNULL(t.is_cancel,0) = 0 AND cm.orig_approval_no IS NOT NULL)\n) c\n  ON c.match_approval_no = a.approval_no\nWHERE c.match_approval_no IS NULL;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -1536,
+        1904
+      ],
+      "id": "18e78ff5-b10b-4ba3-94c8-91ae55cd17cd",
+      "name": "비교해서 recon_results에 적재 recon_results",
+      "credentials": {
+        "mySql": {
+          "id": "y3ZoJLRXD1J2K46g",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO settlement_transactions (\n  recon_run_id, recon_date,\n  txn_key, match_status,\n  auth_id, clearing_id,\n  auth_amount, clearing_amount,\n  merchant_id, currency,\n  auth_is_cancel, clearing_is_cancel,\n  mcc, category,\n  customer_key,\n  channel, city\n)\nSELECT\n  r.recon_run_id,\n  r.recon_date,\n\n  r.txn_key,\n  r.match_status,  \n\n  r.auth_id,\n  r.clearing_id,\n\n  r.auth_amount,\n  r.clearing_amount,\n\n  r.merchant_id,\n  r.currency,\n\n  r.auth_is_cancel,\n  r.clearing_is_cancel,\n\n  r.mcc,\n  r.category,\n\n  r.customer_key,\n  r.channel,\n  r.city\nFROM recon_results r\nWHERE r.recon_run_id = '{{$node[\"Code (Recon Meta)\"].json.recon_run_id}}'\n  AND r.recon_date   = '{{$node[\"Code (Recon Meta)\"].json.recon_date}}'\n  AND r.match_status = 'MATCH';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -1232,
+        1904
+      ],
+      "id": "8c00b202-fd1d-40f2-b6b8-fdd0337b279d",
+      "name": "MATCH만 있는 테이블 settlement_transactions",
+      "credentials": {
+        "mySql": {
+          "id": "y3ZoJLRXD1J2K46g",
+          "name": "MySQL account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "국내 라벨링": {
+      "main": [
+        [
+          {
+            "node": "엘라스틱서치 적재(국내)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "해외 라벨링": {
+      "main": [
+        [
+          {
+            "node": "엘라스틱서치 적재(해외)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "해시를위한 작업",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "정제화",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "해시를위한 작업": {
+      "main": [
+        [
+          {
+            "node": "Crypto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1차 검증본": {
+      "main": [
+        [
+          {
+            "node": "Code (Recon Meta)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "정제화": {
+      "main": [
+        [
+          {
+            "node": "1차 검증본",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "원본 적재": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "select_settlement_transactions": {
+      "main": [
+        [
+          {
+            "node": "국내결제/해외결제 분기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "국내결제/해외결제 분기": {
+      "main": [
+        [
+          {
+            "node": "국내 라벨링",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "해외 라벨링",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "엘라스틱서치 적재(국내)": {
+      "main": [
+        [
+          {
+            "node": "데이터 복원 (국내)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "엘라스틱서치 적재(해외)": {
+      "main": [
+        [
+          {
+            "node": "데이터 복원 (해외)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "데이터 복원 (국내)": {
+      "main": [
+        [
+          {
+            "node": "데이터 병합",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "데이터 복원 (해외)": {
+      "main": [
+        [
+          {
+            "node": "데이터 병합",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "데이터 병합": {
+      "main": [
+        [
+          {
+            "node": "유형별 합계 산출",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "유형별 합계 산출": {
+      "main": [
+        [
+          {
+            "node": "리포트 양식 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "리포트 양식 생성": {
+      "main": [
+        [
+          {
+            "node": "디스코드 알림 발송",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "디스코드 알림 발송": {
+      "main": [
+        []
+      ]
+    },
+    "Code (Recon Meta)": {
+      "main": [
+        [
+          {
+            "node": "비교해서 recon_results에 적재 recon_results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crypto": {
+      "main": [
+        [
+          {
+            "node": "원본 적재",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "비교해서 recon_results에 적재 recon_results": {
+      "main": [
+        [
+          {
+            "node": "MATCH만 있는 테이블 settlement_transactions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MATCH만 있는 테이블 settlement_transactions": {
+      "main": [
+        [
+          {
+            "node": "select_settlement_transactions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB에 로그기록 적재",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "3970183c-af17-4d3e-9085-9f2d0208c5c8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3019ebb37314f43367674b0a25625e77c51cd68bfadec5cf292c93441d481346"
+  },
+  "id": "Zs9tNVWW2m6dAWsEZovgO",
+  "tags": []
+}
