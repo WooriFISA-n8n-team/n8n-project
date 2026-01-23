@@ -11,12 +11,13 @@
 
 | Category | Technology | Usage |
 | :--- | :--- | :--- |
-| **Workflow** | **n8n** | 고액 결제 필터링, 데이터 비교/검증 로직 자동화 |
-| **Database** | **MySQL** | 가맹점 및 카드사 원장 데이터 관리 |
-| **Log/Search** | **Elasticsearch (7.17)** | 검증된 분석용 데이터셋 적재 (Security Enabled) |
-| **Visualization** | **Kibana** | 고객 소비 패턴 시각화 대시보드 |
-| **Alerting** | **Discord** | 고액/이상 결제 실시간 관리자 알림 |
-| **Infra** | **Docker** | 컨테이너 기반 환경 구성 |
+| **Workflow** | ![n8n](https://img.shields.io/badge/n8n-FF6D00?style=flat-square&logo=n8n&logoColor=white) | 고액 결제 필터링, 데이터 비교/검증 로직 자동화 |
+| **Database** | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | 가맹점 및 카드사 원장 데이터 관리 |
+| **Log/Search** | ![Elasticsearch](https://img.shields.io/badge/Elasticsearch-005571?style=flat-square&logo=elasticsearch&logoColor=white) | 검증된 분석용 데이터셋 적재 (v7.17, Security Enabled) |
+| **Visualization** | ![Kibana](https://img.shields.io/badge/Kibana-005571?style=flat-square&logo=kibana&logoColor=white) | 고객 소비 패턴 시각화 대시보드 |
+| **Alerting** | ![Discord](https://img.shields.io/badge/Discord-5865F2?style=flat-square&logo=discord&logoColor=white) | 고액/이상 결제 실시간 관리자 알림 |
+| **Infra** | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) | 컨테이너 기반 환경 구성 |
+
 
 ## 📖 Project Overview
  **n8n**으로 카드 승인 거래 CSV **배치 파일을 자동으로 읽어 DB에 적재**하는 ETL 파이프라인을 구현했다. 데이터는 정제/검증 후 SHA256 기반 txn_key를 생성해 중복을 방지하며, **스테이징(transactions_stage)과 정본(transactions)을 분리**해 운영 구조를 모사했다. 적재 단위별 run_id와 ingest_runs 로그로 **시작/종료 상태 및 처리 건수를 기록**하고, 적재 결과를 Discord로 푸시 알림하여 **모니터링을 강화**했다. 또한 **Elasticsearch와 Kibana**를 연동해 카드 사용 내역을 기간/카테고리/가맹점 관점에서 **통계적으로 시각화**했다.
