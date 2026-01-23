@@ -73,6 +73,19 @@
 * 1차 정제한 배치파일 원본과 현장 결제 승인/거절 데이터와 비교하여 2차 검증
     * 카드사 결제 승인/거절 내역과 비교
 * 2차 검증 후 데이터 정본을 DB에 적재
+
+## 대사유형
+
+| 상태 (match_status) | 설명 |
+| --- | --- |
+| MATCH | 정상 매칭 |
+| CANCEL | 매입 승인 취소 |
+| AMOUNT_MISMATCH | 가격 불일치 |
+| MERCHANT_MISMATCH | 가맹점 불일치 |
+| DATETIME_SHIFT | 시간 불일치 |
+| MISSING (clearing-only) | 매입만 존재 |
+| MISSING (auth-only) | 승인만 존재 |
+
 <img src="images\flow3.png">
 
 * 정본 적재 후 데이터 ES에 적재 (추후 통계 분석을 위함)
