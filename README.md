@@ -92,10 +92,7 @@
 * 적재 성공/실패에 대한 내용 푸시
 
 ## 🎁 Result
-
-
-https://github.com/user-attachments/assets/4a7676db-6bf4-4efb-96f1-a2c09f45fef4
-
+<video controls src="images/n8n_test_db.mp4" title="Title"></video>
 
 https://github.com/user-attachments/assets/01fd0e94-3eaa-4830-a340-8e6ed3ee3273
 
